@@ -349,6 +349,7 @@ input:checked + .slider:before {
 <audio id="bgm" src="sound/maou_loop_bgm_8bit28.mp3" preload="auto" loop></audio>
 <audio id="correct-sound" src="sound/正解音.wav" preload="auto"></audio>
 <audio id="button-sound" src="sound/進むボタン.wav" preload="auto"></audio>
+<audio id="finish" src="sound/ステージ終了.mp3" preload="auto"></audio>
     <div id="app">
         <!-- アプリの各画面がここに表示されます -->
         <div id="main-menu" class="screen">
@@ -865,7 +866,8 @@ if (state.currentInput === state.expectedAnswer) {
     function showResults() {
 	const bgm = document.getElementById('bgm');
 	bgm.pause();
-
+	const finishSound = document.getElementById('finish');
+	finishSound.play();						//追加で入れてみた
         const endTime = Date.now();
         const playTime = Math.floor((endTime - state.gameStats.startTime) / 1000); // 秒単位
         
