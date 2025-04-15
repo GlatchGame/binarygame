@@ -18,6 +18,8 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+
+
 }
 
 #app {
@@ -344,6 +346,9 @@ input:checked + .slider:before {
 </style>
 </head>
 <body>
+<audio id="bgm" src="sound/maou_loop_bgm_8bit28.mp3" preload="auto" loop></audio>
+<audio id="correct-sound" src="sound/正解音.wav" preload="auto"></audio>
+<audio id="button-sound" src="sound/進むボタン.wav" preload="auto"></audio>
     <div id="app">
         <!-- アプリの各画面がここに表示されます -->
         <div id="main-menu" class="screen">
@@ -745,6 +750,13 @@ function generateProblem() {
         generateProblem();
         
         showScreen('game-screen');
+
+const bgm = document.getElementById('bgm');
+bgm.currentTime = 0;
+bgm.play().catch(() => {
+    // 自動再生ブロック対策（操作後に再開）
+});
+
     }
 
     // 入力を処理する関数
@@ -774,10 +786,19 @@ function generateProblem() {
         
         if (state.currentInput === state.expectedAnswer) {
             // 正解の場合
+		
+	    
             state.isProcessing = true;
             document.getElementById('feedback').textContent = '○';
             state.gameStats.correctAnswers++;
-            
+const correctSound = document.getElementById('correct-sound');
+
+if (state.currentInput === state.expectedAnswer) {
+    correctSound.currentTime = 0;
+    correctSound.play();
+}
+
+
             // 解答統計を記録
             const answerTime = Date.now();
             state.gameStats.recentAnswers.push({
@@ -842,6 +863,9 @@ function generateProblem() {
 
     // ゲーム結果を表示する関数
     function showResults() {
+	const bgm = document.getElementById('bgm');
+	bgm.pause();
+
         const endTime = Date.now();
         const playTime = Math.floor((endTime - state.gameStats.startTime) / 1000); // 秒単位
         
