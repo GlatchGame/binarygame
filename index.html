@@ -464,6 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+    
 
     // レベルごとの必要問題数を設定
     function initLevelUpCounts() {
@@ -757,6 +758,7 @@ bgm.currentTime = 0;
 bgm.play().catch(() => {
     // 自動再生ブロック対策（操作後に再開）
 });
+bgm.volume = 0.3;
 
     }
 
