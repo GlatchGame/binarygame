@@ -569,7 +569,7 @@ const coinStyles = `
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
     z-index: 101;
     opacity: 0;
-    animation: coinSound 1.5s ease-out forwards;
+    animation: coinSound 0.5s ease-out forwards;
 }
 
 @keyframes coinSound {
@@ -651,18 +651,18 @@ function calculateCoinsEarned(level, answerTimeMs, incorrectAttempts) {
 // コイン獲得アニメーション関数
 function animateCoinEarning(amount, x, y) {
     // コインアニメーション要素を作成
-    const coinAnim = document.createElement('div');
-    coinAnim.className = 'coin-animation';
-    coinAnim.textContent = `+${amount}`;
-    coinAnim.style.left = `${x}px`;
-    coinAnim.style.top = `${y}px`;
-    document.getElementById('app').appendChild(coinAnim);
+    //const coinAnim = document.createElement('div');
+    //coinAnim.className = 'coin-animation';
+    //coinAnim.textContent = `+${amount}`;
+    //coinAnim.style.left = `${x}px`;
+    //coinAnim.style.top = `${y}px`;
+    //document.getElementById('app').appendChild(coinAnim);
     
     // コインサウンド要素を作成
-    //const coinSound = document.createElement('div');
-    //coinSound.className = 'coin-sound';
-    //coinSound.textContent = `+${amount}枚`;
-    //document.getElementById('app').appendChild(coinSound);
+    const coinSound = document.createElement('div');
+    coinSound.className = 'coin-sound';
+    coinSound.textContent = `+${amount}枚`;
+    document.getElementById('app').appendChild(coinSound);
     
     // コイン効果音を再生
     const coinSoundEffect = document.getElementById('coin-sound');
@@ -673,8 +673,8 @@ function animateCoinEarning(amount, x, y) {
     
     // アニメーション完了後に要素を削除
     setTimeout(() => {
-        document.getElementById('app').removeChild(coinAnim);
-        //document.getElementById('app').removeChild(coinSound);
+        //document.getElementById('app').removeChild(coinAnim);
+        document.getElementById('app').removeChild(coinSound);
     }, 500);
     
     // コイン表示を更新
