@@ -450,6 +450,15 @@ document.addEventListener('DOMContentLoaded', () => {
         expectedAnswer: '',
         incorrectAttempts: 0,
         isProcessing: false,
+	coins: 0,
+    	totalCoins: 0,
+   	 // コインアニメーション状態を追加
+    	coinAnimation: {
+        	active: false,
+        	amount: 0,
+        	x: 0,
+        	y: 0
+    	}
         gameStats: {
             startTime: 0,
             totalAnswers: 0,
@@ -468,7 +477,333 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+    // ローカルストレージからコイン合計を読み込む
+	function loadRecords() {
+	    const savedRecords = localStorage.getItem('binaryDecimalGameRecords');
+	    if (savedRecords) {
+	        state.bestRecords = JSON.parse(savedRecords);
+	    }
+	    
+	    // コイン合計を読み込む
+	    const savedCoins = localStorage.getItem('binaryDecimalGameCoins');
+	    if (savedCoins) {
+	        state.totalCoins = parseInt(savedCoins, 10);
+	    }
+	}
+
+	// ローカルストレージにコイン合計を保存
+	function saveRecords() {
+	    localStorage.setItem('binaryDecimalGameRecords', JSON.stringify(state.bestRecords));
+	    localStorage.setItem('binaryDecimalGameCoins', state.totalCoins.toString());
+	}
+	
+// CSSに以下を追加
+const coinStyles = `
+.coin-display {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    color: #f39c12;
+    font-weight: bold;
+}
+
+.coin-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+    background-color: #f39c12;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.coin-animation {
+    position: absolute;
+    background-color: #f39c12;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 100;
+    animation: coinFly 1s ease-out forwards;
+}
+
+@keyframes coinFly {
+    0% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+    60% {
+        transform: scale(1.2) translateY(-20px);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.5) translateY(-50px);
+        opacity: 0;
+    }
+}
+
+.coin-sound {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: #f39c12;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    z-index: 101;
+    opacity: 0;
+    animation: coinSound 1.5s ease-out forwards;
+}
+
+@keyframes coinSound {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+    }
+}
+`;
+
+// HTMLのheadにスタイルを追加
+function addCoinStyles() {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = coinStyles;
+    document.head.appendChild(styleElement);
+}
+
+// ゲーム画面にコイン表示を追加
+function addCoinDisplay() {
+    const gameHeader = document.querySelector('.game-header');
+    const coinDisplay = document.createElement('div');
+    coinDisplay.className = 'coin-display';
+    coinDisplay.innerHTML = `
+        <div class="coin-icon">¥</div>
+        <span id="coin-count">${state.totalCoins}</span>
+    `;
+    gameHeader.appendChild(coinDisplay);
     
+    // 結果画面にも追加
+    const resultsContent = document.querySelector('.results-content');
+    const coinEarned = document.createElement('p');
+    coinEarned.innerHTML = `コイン獲得: <span id="result-coins">0</span>`;
+    resultsContent.appendChild(coinEarned);
+    
+    const bestRecords = document.querySelector('.best-records');
+    const totalCoins = document.createElement('p');
+    totalCoins.innerHTML = `総コイン: <span id="total-coins">0</span>`;
+    bestRecords.appendChild(totalCoins);
+}
+
+// コイン効果音を追加
+function addCoinSoundEffect() {
+    const audio = document.createElement('audio');
+    audio.id = 'coin-sound';
+    audio.src = 'sound/coin.wav'; // このサウンドファイルを追加する必要があります
+    audio.preload = 'auto';
+    document.body.appendChild(audio);
+}
+
+// レベルと速度に基づいてコイン獲得数を計算
+function calculateCoinsEarned(level, answerTimeMs, incorrectAttempts) {
+    // レベルに基づく基本コイン（高いレベルでより多く獲得）
+    const levelBonus = Math.floor(level / 2) + 1;
+    
+    // 速度ボーナス（速い回答でより多く獲得）
+    let speedBonus = 0;
+    if (answerTimeMs < 2000) {
+        speedBonus = 3;
+    } else if (answerTimeMs < 4000) {
+        speedBonus = 2;
+    } else if (answerTimeMs < 6000) {
+        speedBonus = 1;
+    }
+    
+    // 不正解の試行に対するペナルティ
+    const penalty = incorrectAttempts;
+    
+    // 合計コインを計算（最低1枚）
+    const coins = Math.max(1, levelBonus + speedBonus - penalty);
+    return coins;
+}
+
+// コイン獲得アニメーション関数
+function animateCoinEarning(amount, x, y) {
+    // コインアニメーション要素を作成
+    const coinAnim = document.createElement('div');
+    coinAnim.className = 'coin-animation';
+    coinAnim.textContent = `+${amount}`;
+    coinAnim.style.left = `${x}px`;
+    coinAnim.style.top = `${y}px`;
+    document.getElementById('app').appendChild(coinAnim);
+    
+    // コインサウンド要素を作成
+    const coinSound = document.createElement('div');
+    coinSound.className = 'coin-sound';
+    coinSound.textContent = `+${amount}枚`;
+    document.getElementById('app').appendChild(coinSound);
+    
+    // コイン効果音を再生
+    const coinSoundEffect = document.getElementById('coin-sound');
+    coinSoundEffect.currentTime = 0;
+    coinSoundEffect.play().catch(() => {
+        // 自動再生がブロックされる場合があります
+    });
+    
+    // アニメーション完了後に要素を削除
+    setTimeout(() => {
+        document.getElementById('app').removeChild(coinAnim);
+        document.getElementById('app').removeChild(coinSound);
+    }, 1500);
+    
+    // コイン表示を更新
+    document.getElementById('coin-count').textContent = state.totalCoins;
+}
+
+// コインを獲得するように回答チェック関数を更新
+function checkAnswer() {
+    if (state.isProcessing) return;
+    
+    if (state.currentInput === state.expectedAnswer) {
+        // 正解の場合
+        state.isProcessing = true;
+        document.getElementById('feedback').textContent = '○';
+        state.gameStats.correctAnswers++;
+        
+        const correctSound = document.getElementById('correct-sound');
+        correctSound.currentTime = 0;
+        correctSound.play();
+        
+        // この回答にかかった時間を計算
+        const answerTime = Date.now();
+        let answerTimeMs = 0;
+        
+        if (state.gameStats.recentAnswers.length > 0) {
+            const lastAnswer = state.gameStats.recentAnswers[state.gameStats.recentAnswers.length - 1];
+            answerTimeMs = answerTime - lastAnswer.time;
+        } else {
+            answerTimeMs = answerTime - state.gameStats.startTime;
+        }
+        
+        // 回答統計を記録
+        state.gameStats.recentAnswers.push({
+            level: state.level,
+            time: answerTime,
+            incorrectAttempts: state.incorrectAttempts
+        });
+        
+        // コインを計算して獲得
+        const coinsEarned = calculateCoinsEarned(state.level, answerTimeMs, state.incorrectAttempts);
+        state.coins += coinsEarned;
+        state.totalCoins += coinsEarned;
+        
+        // コインアニメーションの位置（問題の中心）
+        const problemElement = document.getElementById('problem');
+        const rect = problemElement.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        
+        // コインアニメーションを表示
+        animateCoinEarning(coinsEarned, x, y);
+        
+        // 更新されたコインをローカルストレージに保存
+        saveRecords();
+        
+        // 次の問題までの遅延
+        setTimeout(() => {
+            state.isProcessing = false;
+            checkLevelUp();
+            generateProblem();
+        }, 1500);  // コインアニメーションの時間に合わせて遅延を増加
+    } else {
+        // 不正解の場合 - 以前と同じ
+        document.getElementById('feedback').textContent = 'ちがうよ';
+        state.incorrectAttempts++;
+        
+        if (state.incorrectAttempts >= 3) {
+            if (state.level > 0) {
+                state.level--;
+                updateLevelDisplay();
+            }
+            setTimeout(() => {
+                generateProblem();
+            }, 500);
+        } else {
+            setTimeout(() => {
+                state.currentInput = '';
+                document.getElementById('input-display').textContent = '';
+                document.getElementById('feedback').textContent = '';
+            }, 500);
+        }
+    }
+    
+    state.gameStats.totalAnswers++;
+}
+
+// コインを表示するように結果画面を更新
+function showResults() {
+    const bgm = document.getElementById('bgm');
+    bgm.pause();
+    const finishSound = document.getElementById('finish');
+    finishSound.play();
+    
+    const endTime = Date.now();
+    const playTime = Math.floor((endTime - state.gameStats.startTime) / 1000);
+    
+    // ベスト記録を更新
+    if (state.level > state.bestRecords[state.mode].bestLevel) {
+        state.bestRecords[state.mode].bestLevel = state.level;
+    }
+    state.bestRecords[state.mode].totalPlayTime += playTime;
+    saveRecords();
+    
+    // 結果表示を更新
+    document.getElementById('result-level').textContent = state.level;
+    document.getElementById('result-answers').textContent = state.gameStats.totalAnswers;
+    document.getElementById('result-correct').textContent = state.gameStats.correctAnswers;
+    
+    const accuracy = state.gameStats.totalAnswers > 0 
+        ? Math.round((state.gameStats.correctAnswers / state.gameStats.totalAnswers) * 100) 
+        : 0;
+    document.getElementById('result-accuracy').textContent = accuracy;
+    
+    const minutes = Math.floor(playTime / 60);
+    const seconds = playTime % 60;
+    document.getElementById('result-time').textContent = `${minutes}分${seconds}秒`;
+    
+    // このセッションで獲得したコインを表示
+    document.getElementById('result-coins').textContent = state.coins;
+    document.getElementById('total-coins').textContent = state.totalCoins;
+    
+    // ベスト記録表示
+    document.getElementById('best-level').textContent = state.bestRecords[state.mode].bestLevel;
+    
+    const totalMinutes = Math.floor(state.bestRecords[state.mode].totalPlayTime / 60);
+    const totalSeconds = state.bestRecords[state.mode].totalPlayTime % 60;
+    document.getElementById('total-play-time').textContent = `${totalMinutes}分${totalSeconds}秒`;
+    
+    showScreen('results-screen');
+}
 
     // レベルごとの必要問題数を設定
     function initLevelUpCounts() {
@@ -751,6 +1086,16 @@ function generateProblem() {
         } else {
             document.getElementById('instruction').textContent = '2進数に変換しよう';
         }
+
+	// このセッションのコインをリセット
+	    state.coins = 0;
+	    
+	    // コイン表示がまだない場合は追加
+	    if (!document.querySelector('.coin-display')) {
+	        addCoinDisplay();
+	    } else {
+	        document.getElementById('coin-count').textContent = state.totalCoins;
+	    }
         
         // 最初の問題を生成
         generateProblem();
@@ -1002,6 +1347,8 @@ if (state.currentInput === state.expectedAnswer) {
        initLevelUpCounts();
        loadRecords();
        setupEventListeners();
+	addCoinStyles();
+	addCoinSoundEffect();
        showScreen('main-menu');
    }
 
