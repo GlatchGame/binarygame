@@ -1140,67 +1140,6 @@ bgm.volume = 0.3;
         }
     }
 
-    // 答えを判定する関数
-    function checkAnswer() {
-        if (state.isProcessing) return;
-        
-        if (state.currentInput === state.expectedAnswer) {
-            // 正解の場合
-		
-	    
-            state.isProcessing = true;
-            document.getElementById('feedback').textContent = '○';
-            state.gameStats.correctAnswers++;
-const correctSound = document.getElementById('correct-sound');
-
-if (state.currentInput === state.expectedAnswer) {
-    correctSound.currentTime = 0;
-    correctSound.play();
-}
-
-
-            // 解答統計を記録
-            const answerTime = Date.now();
-            state.gameStats.recentAnswers.push({
-                level: state.level,
-                time: answerTime,
-                incorrectAttempts: state.incorrectAttempts
-            });
-            
-            // ディレイ後に次の問題
-            setTimeout(() => {
-                state.isProcessing = false;
-                checkLevelUp();
-                generateProblem();
-            }, 500);
-        } else {
-            // 不正解の場合
-            document.getElementById('feedback').textContent = 'ちがうよ';
-            state.incorrectAttempts++;
-            
-            // 3回以上間違えたらレベルダウン
-            if (state.incorrectAttempts >= 3) {
-                if (state.level > 0) {
-                    state.level--;
-                    updateLevelDisplay();
-                }
-                // 新しい問題を生成
-                setTimeout(() => {
-                    generateProblem();
-                }, 500);
-            } else {
-                // 入力をクリア
-                setTimeout(() => {
-                    state.currentInput = '';
-                    document.getElementById('input-display').textContent = '';
-                    document.getElementById('feedback').textContent = '';
-                }, 500);
-            }
-        }
-        
-        state.gameStats.totalAnswers++;
-    }
-
     // レベルアップのチェックを行う関数
     function checkLevelUp() {
         const requiredCount = state.gameStats.levelUpCounts[state.level] || 6;
