@@ -458,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
         	amount: 0,
         	x: 0,
         	y: 0
-    	}
+	},
         gameStats: {
             startTime: 0,
             totalAnswers: 0,
@@ -496,7 +496,10 @@ document.addEventListener('DOMContentLoaded', () => {
 	    localStorage.setItem('binaryDecimalGameRecords', JSON.stringify(state.bestRecords));
 	    localStorage.setItem('binaryDecimalGameCoins', state.totalCoins.toString());
 	}
-	
+
+// HTMLのheadにスタイルを追加
+function addCoinStyles() {
+
 // CSSに以下を追加
 const coinStyles = `
 .coin-display {
@@ -585,8 +588,6 @@ const coinStyles = `
 }
 `;
 
-// HTMLのheadにスタイルを追加
-function addCoinStyles() {
     const styleElement = document.createElement('style');
     styleElement.textContent = coinStyles;
     document.head.appendChild(styleElement);
@@ -822,11 +823,18 @@ function showResults() {
         if (savedRecords) {
             state.bestRecords = JSON.parse(savedRecords);
         }
+
+	// コイン合計を読み込む
+        const savedCoins = localStorage.getItem('binaryDecimalGameCoins');
+        if (savedCoins) {
+            state.totalCoins = parseInt(savedCoins, 10);
+        }
     }
 
     // ローカルストレージに記録を保存
     function saveRecords() {
         localStorage.setItem('binaryDecimalGameRecords', JSON.stringify(state.bestRecords));
+        localStorage.setItem('binaryDecimalGameCoins', state.totalCoins.toString());    
     }
 
     // 画面を切り替える関数
