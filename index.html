@@ -659,10 +659,10 @@ function animateCoinEarning(amount, x, y) {
     document.getElementById('app').appendChild(coinAnim);
     
     // コインサウンド要素を作成
-    const coinSound = document.createElement('div');
-    coinSound.className = 'coin-sound';
-    coinSound.textContent = `+${amount}枚`;
-    document.getElementById('app').appendChild(coinSound);
+    //const coinSound = document.createElement('div');
+    //coinSound.className = 'coin-sound';
+    //coinSound.textContent = `+${amount}枚`;
+    //document.getElementById('app').appendChild(coinSound);
     
     // コイン効果音を再生
     const coinSoundEffect = document.getElementById('coin-sound');
@@ -674,8 +674,8 @@ function animateCoinEarning(amount, x, y) {
     // アニメーション完了後に要素を削除
     setTimeout(() => {
         document.getElementById('app').removeChild(coinAnim);
-        document.getElementById('app').removeChild(coinSound);
-    }, 1500);
+        //document.getElementById('app').removeChild(coinSound);
+    }, 500);
     
     // コイン表示を更新
     document.getElementById('coin-count').textContent = state.totalCoins;
